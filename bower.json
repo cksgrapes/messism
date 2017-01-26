@@ -1,0 +1,25 @@
+{
+  "name": "messism",
+  "description": "messism",
+  "main": "gulpfile.js",
+  "authors": [
+    "Ai Shimizu <cksgrapes@gmail.com>"
+  ],
+  "license": "ISC",
+  "homepage": "",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "devDependencies": {
+    "picturefill": "^3.0.2",
+    "jquery": "^3.1.1",
+    "slick": "*",
+    "PACE": "pace#^1.0.2",
+    "instafeed.js": "^1.4.1",
+    "jquery_lazyload": "jquery.lazyload#^1.9.7"
+  }
+}

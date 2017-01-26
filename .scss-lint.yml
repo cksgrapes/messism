@@ -1,0 +1,10 @@
+linters:
+  PropertySortOrder:
+    order: smacss
+  SelectorFormat:
+    ignored_types: [attribute, class, element, id, placeholder]
+  PropertySortOrder:
+    enabled: false
+    order: smacss
+  EmptyLineBetweenBlocks:
+    enabled: false

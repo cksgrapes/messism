@@ -1,0 +1,13 @@
+{
+  "sitename": "messism",
+  "index": {
+    "title" : "messism",
+    "description": "description",
+    "keywords" : "keyword",
+    "ogp" : {
+      "title" : "messism",
+      "description" : "description",
+      "type": "website"
+    }
+  }
+}
