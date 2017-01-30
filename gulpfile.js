@@ -1,79 +1,63 @@
-/**
- * パッケージ読込
- */
-var gulp        = require('gulp'),
-    styleguide  = require('sc5-styleguide')
+/* Gulp Plugins
+======================================== */
+
+var fs          = require('fs'),
+    gulp        = require('gulp'),
     browserSync = require('browser-sync'),
-    sequence    = require('run-sequence'),
-    grapher     = require('sass-graph'),
-    buffer      = require('vinyl-buffer'),
-    merge       = require('merge-stream'),
-    rimraf      = require('rimraf'),
-    fs          = require('fs');
+    // gulp-*, gulp.*で始まる名前のものを一括で読込
+    $           = require('gulp-load-plugins')();
 
-// gulp-*, gulp.*で始まる名前のものを一括で読込
-var $ = require('gulp-load-plugins')();
+/* Setting
+======================================== */
 
-/**
- * パス定義・他
- */
-var develop = { //開発用パス
-    'root' : 'dev/',
-    'ejs'  : ['dev/ejs/**/*.ejs', '!dev/ejs/**/_*.ejs'],
-    'data' : 'dev/data/',
-    'sass' : 'dev/sass/**/*.scss',
-    'minifyCss': 'dev/sass/*.scss',
-    'js': ['dev/js/**/*.js', '!' + 'dev/js/lib/**/*.js'],
-    'libJs': 'dev/js/lib/**/*.js',
-    'image': ['dev/img/**/*.{png,jpg,gif,svg,ico}'],
-    'sprite': 'dev/sprite/*.png'
-  },
-  watch = { //監視用パス
-    'ejs' : ['dev/ejs/**/*.ejs'],
-    'data' : [develop.data + '**/*.json'],
-    'hologram': ['dev/hologram/*.scss','dev/hologram/*.md']
-  },
-  release = { //リリース用パス
-    'root' : 'release/',
-    'html' : 'release/',
-    'sass' : 'release/assets/css/',
-    'js'   : 'release/assets/js/',
-    'libJs': 'release/assets/js/',
-    'image': 'release/assets/img/',
-    'minifyCss': 'release/assets/css/'
-  },
-  AUTOPREFIXER_BROWSERS = [
-    // @see https://github.com/ai/browserslist#browsers
-    'last 2 versions',
-    'ie >= 11',
-    'iOS >= 9',
-    'Android >= 4.3'
-  ];
+//開発環境パス
+var src = {
+  'base' : './dev/',
+  'scss' : ['./dev/src/**/*.scss'],
+  'js'   : ['./dev/src/**/*.js'],
+  'img'  : ['./dev/src/**/*.{png,jpg,gif,svg,ico}']
+};
+
+//出力環境パス
+var dest = {
+  'base' : './htdocs/',
+  'css'  : './htdocs/assets/css/',
+  'js'   : './htdocs/assets/js/',
+  'img'  : './htdocs/assets/img/'
+};
+
+//対象ブラウザ
+var AUTOPREFIXER_BROWSERS = [
+  'last 2 versions',
+  'ie >= 11',
+  'iOS >= 9',
+  'Android >= 4.4'
+];
+
+/* Tasks
+======================================== */
 
 /**
- * ejsコンパイル
+ * ejsのコンパイル
  */
 gulp.task('ejs', function() {
-  return gulp.src(develop.ejs)
-  // .pipe(cached('ejs'))
+  gulp.src([ src.base + '**/*.ejs', '!' + src.base + '**/_*.ejs' ])
   .pipe($.plumber({errorHandler: $.notify.onError("Error: <%= error.message %>")}))
   .pipe($.ejs({
-      site  : JSON.parse(fs.readFileSync(develop.data + 'site.json')),
-      // list: JSON.parse(fs.readFileSync(develop.data + 'list.json'))
+      site  : JSON.parse(fs.readFileSync(src.data + 'config.json'))
     },
-    {ext: '.html'}
+    {
+      ext: '.html'
+    }
   ))
-  .pipe(gulp.dest(release.html))
-  .pipe(browserSync.reload({stream: true}));
+  .pipe(gulp.dest(dest.base));
 });
 
 /**
- * sassコンパイル
+ * Sassのコンパイル・圧縮
  */
-gulp.task('sass', ['hologram'] , function(){
-  graph = grapher.parseDir('dev/sass/');
-  return gulp.src(develop.sass)
-  // .pipe(cached('sass'))
+gulp.task('sass' , function(){
+  return gulp.src(src.scss)
   .pipe($.plumber({errorHandler: $.notify.onError("Error: <%= error.message %>")}))
   .pipe($.sourcemaps.init())
   .pipe($.sass().on('error', $.sass.logError))
@@ -82,11 +66,41 @@ gulp.task('sass', ['hologram'] , function(){
   }))
   .pipe($.csscomb())
   .pipe($.combineMediaQueries())
+  .pipe($.sourcemaps.write('maps', {
+    includeContent: false,
+    sourceRoot: dest.css + 'maps'
+  }))
+  .pipe(gulp.dest(dest.css))
   .pipe($.cleanCss())
-  .pipe($.sourcemaps.write('.'))
-  .pipe(gulp.dest(release.sass))
-  .pipe(browserSync.reload({stream: true}));
+  .pipe($.rename({ extname : '.min.css' }))
+  .pipe(gulp.dest(dest.css));
 });
+
+/**
+ * JSの結合
+ */
+gulp.task('webpack', function() {
+  var webpackConfig = require('./webpack.config.js');
+
+  return gulp.src(src.js)
+    .pipe($.webpack(webpackConfig))
+    .pipe(gulp.dest(dest.js));
+});
+
+/**
+ * 画像の圧縮
+ */
+gulp.task('image', function() {
+  return gulp.src(src.img)
+  .pipe($.changed(dest.img))
+  .pipe($.imagemin({
+    progressive: true,
+    interlaced: true,
+    optimizationLevel: 7
+  }))
+  .pipe(gulp.dest(dest.img));
+});
+
 
 /**
  * hologram
@@ -94,130 +108,62 @@ gulp.task('sass', ['hologram'] , function(){
  gulp.task('hologram', function(){
   var configGlob = './hologram_config.yml';
   gulp.src( configGlob )
-    .pipe($.plumber({errorHandler: $.notify.onError("Error: <%= error.message %>")}))
     .pipe($.hologram());
  });
 
-/**
- * デフォルトjsファイルとjQueryをリリースディレクトリに出力します。
- */
-gulp.task('webpack', function() {
-  return gulp.src(develop.js)
-  .pipe($.plumber({errorHandler: $.notify.onError("Error: <%= error.message %>")}))
-  .pipe($.webpack(require('./webpack.config.js')))
-  .pipe(gulp.dest(release.js))
-  .pipe(browserSync.reload({stream: true}));
-});
-
-
-/**
- * デベロップディレクトリの画像を圧縮、
- * 階層構造を維持したまま、リリースディレクトリに出力します。
- */
-gulp.task('image', function() {
-  return gulp.src(develop.image)
-  .pipe($.changed(release.image))
-  .pipe($.imagemin({
-    // jpgをロスレス圧縮（画質を落とさず、メタデータを削除）。
-    progressive: true,
-    // gifをインターレースgifにします。
-    interlaced: true,
-    // PNGファイルの圧縮率（7が最高）を指定します。
-    optimizationLevel: 7
-  }))
-  .pipe(gulp.dest(release.image))
-  .pipe(browserSync.reload({stream: true}));
-});
-
-/**
- * スプライト画像を作成
- */
-gulp.task('sprite', function(){
-  var spriteData = gulp.src(develop.sprite)
-    .pipe($.spritesmith({
-      imgName: 'sprite.png',
-      cssName: '_sprite.scss',
-      imgPath: '../img/sprite.png',
-      padding: 15
-    }));
-  var imgStream = spriteData.img
-    .pipe(buffer())
-    .pipe($.imagemin({
-      optimizationLevel: 7
-    }))
-    .pipe(gulp.dest('dev/img/'));
-  var cssStream = spriteData.css
-    .pipe(gulp.dest('dev/sass/'));
-  return merge(imgStream, cssStream);
-});
-
-/**
- * リリースディレクトリの削除
- */
-gulp.task('clean', function (cb) {
-  rimraf(release.root, cb);
-});
-
-/**
- * ビルド
- */
-gulp.task('build', function(){
-  sequence(
-    'sprite',
-    ['ejs','image','sass','js']
-  )
-});
-
-/**
- * 監視
- */
-gulp.task('watch', ['build'],function() {
-  gulp.watch(watch.ejs, ['ejs']);
-  gulp.watch(watch.data, ['ejs']);
-  gulp.watch(develop.sass, ['sass']);
-  gulp.watch(watch.hologram, ['hologram']);
-  gulp.watch(develop.js, ['webpack']);
-  gulp.watch(develop.image, ['image']);
-  gulp.watch(develop.sprite, ['sprite']);
-});
+ /*========================================*/
+/* Server / Watch
+/*========================================*/
 
 /**
  * ローカルサーバーの起動
  */
-gulp.task('browser-sync', function() {
+gulp.task('server', function() {
   browserSync({
-    port: 3000,
     server: {
-      baseDir: 'release/',
-      // baseDir: release.root,
-      index: "index.html"
+      baseDir: dest.base
     }
   });
 });
 
 
 /**
- * 開発用タスク
+ * ファイル監視
  */
-gulp.task('default', function() {
-  sequence(
-    'watch',
-    'browser-sync'
-  )
+gulp.task('watch', function() {
+  // 出力領域が更新されたらオートリロード
+  $.watch([
+      dest.base + '**/*.html',
+      dest.base + '**/*.css',
+      dest.base + '**/*.js',
+      dest.base + '**/*.jpg',
+      dest.base + '**/*.png',
+      dest.base + '**/*.svg',
+  ], function (){
+      browserSync.reload();
+      // browserSync.reload({stream: true});
+  });
+
+
+  // 開発環境のファイルを監視
+  $.watch( src.base + '**/*.ejs' , function () {
+    gulp.start( 'ejs' );
+  });
+  $.watch( src.scss , function () {
+    gulp.start( 'sass' );
+  });
+  $.watch( src.js , function () {
+    gulp.start( 'webpack' );
+  });
+  $.watch( src.img , function () {
+    gulp.start( 'imagemin' );
+  });
+  $.watch( [ './hologram/**/*' ] , function () {
+    gulp.start( 'hologram' );
+  });
 });
 
 /**
- * リリースに使用するタスクです。
- * リリースディレクトリを最新の状態にしてから、ファイルの圧縮をします。
+ * デフォルトタスク
  */
-gulp.task('release', ['clean'], function() {
-  sequence(
-    'sprite',
-    ['ejs','image','sass','js']
-  )
-});
-
-
-
-
-
+gulp.task('default', ['server', 'watch'] );
