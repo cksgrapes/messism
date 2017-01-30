@@ -4,6 +4,7 @@
 var fs          = require('fs'),
     gulp        = require('gulp'),
     browserSync = require('browser-sync'),
+    pngquant    = require('imagemin-pngquant'),
     // gulp-*, gulp.*で始まる名前のものを一括で読込
     $           = require('gulp-load-plugins')();
 
@@ -23,7 +24,7 @@ var dest = {
   'base' : './htdocs/',
   'css'  : './htdocs/assets/css/',
   'js'   : './htdocs/assets/js/',
-  'img'  : './htdocs/assets/img/'
+  'img'  : './htdocs/assets/images/'
 };
 
 //対象ブラウザ
@@ -44,12 +45,18 @@ gulp.task('ejs', function() {
   gulp.src([ src.base + '**/*.ejs', '!' + src.base + '**/_*.ejs' ])
   .pipe($.plumber({errorHandler: $.notify.onError("Error: <%= error.message %>")}))
   .pipe($.ejs({
-      site  : JSON.parse(fs.readFileSync(src.data + 'config.json'))
+      site: JSON.parse(fs.readFileSync(src.base + 'inc/config.json'))
     },
     {
       ext: '.html'
     }
   ))
+  // .pipe($.htmlmin({
+  //   collapseBooleanAttributes: true,
+  //   collapseWhitespace: true,
+  //   minifyJS: true,
+  //   removeComments: true,
+  // }))
   .pipe(gulp.dest(dest.base));
 });
 
@@ -65,7 +72,6 @@ gulp.task('sass' , function(){
     browsers: AUTOPREFIXER_BROWSERS,
   }))
   .pipe($.csscomb())
-  .pipe($.combineMediaQueries())
   .pipe($.sourcemaps.write('maps', {
     includeContent: false,
     sourceRoot: dest.css + 'maps'
@@ -77,26 +83,74 @@ gulp.task('sass' , function(){
 });
 
 /**
- * JSの結合
+ * JSの結合・圧縮・コピー
  */
+
+//webpackでJS結合
 gulp.task('webpack', function() {
   var webpackConfig = require('./webpack.config.js');
 
-  return gulp.src(src.js)
+  gulp.src(src.js)
     .pipe($.webpack(webpackConfig))
     .pipe(gulp.dest(dest.js));
+});
+
+gulp.task( 'js_concat', function () {
+  gulp.src([
+        base.js + 'src/xx/xx.js',
+        base.js + 'src/xx/xx2.js'
+    ])
+    .pipe($.plumber({errorHandler: $.notify.onError("Error: <%= error.message %>")}))
+    .pipe($.concat( 'xxx.js' ))
+    .pipe(gulp.dest(dest.js))
+    .pipe($.uglify({
+      preserveComments: 'some'
+    }))
+    .pipe($.rename({ extname : '.min.js' }))
+    .pipe(gulp.dest(dest.js));
+});
+
+
+gulp.task( 'js_copy', function () {
+  gulp.src([
+        base.js + 'src/xx/xx.js',
+        base.js + 'src/xx/xx2.js'
+    ])
+    .pipe($.plumber({errorHandler: $.notify.onError("Error: <%= error.message %>")}))
+    .pipe(gulp.dest(dest.js))
+    .pipe($.uglify({
+      preserveComments: 'some'
+    }))
+    .pipe($.rename({ extname : '.min.js' }))
+    .pipe(gulp.dest(dest.js));
+});
+
+//処理をまとめて実行
+gulp.task('js', function() {
+    gulp.start( 'webpack' );
+    // gulp.start( 'js_concat' );
+    // gulp.start( 'js_copy' );
 });
 
 /**
  * 画像の圧縮
  */
-gulp.task('image', function() {
+gulp.task('imagemin', function() {
   return gulp.src(src.img)
   .pipe($.changed(dest.img))
   .pipe($.imagemin({
-    progressive: true,
-    interlaced: true,
-    optimizationLevel: 7
+    plugins: [
+      pngquant({
+        quality: 60-80,
+        speed: 1
+      }),
+      $.imagemin.jpegtran({
+        progressive: true
+      }),
+      $.imagemin.optipng({
+        interlaced: true
+      })
+    ]
   }))
   .pipe(gulp.dest(dest.img));
 });
@@ -120,12 +174,12 @@ gulp.task('image', function() {
  */
 gulp.task('server', function() {
   browserSync({
+    port: 3000,
     server: {
       baseDir: dest.base
     }
   });
 });
-
 
 /**
  * ファイル監視
@@ -134,6 +188,7 @@ gulp.task('watch', function() {
   // 出力領域が更新されたらオートリロード
   $.watch([
       dest.base + '**/*.html',
+      dest.base + '**/*.json',
       dest.base + '**/*.css',
       dest.base + '**/*.js',
       dest.base + '**/*.jpg',
@@ -146,14 +201,17 @@ gulp.task('watch', function() {
 
 
   // 開発環境のファイルを監視
-  $.watch( src.base + '**/*.ejs' , function () {
+  $.watch( [
+      src.base + '**/*.ejs',
+      src.base + '**/*.json'
+  ] , function () {
     gulp.start( 'ejs' );
   });
   $.watch( src.scss , function () {
     gulp.start( 'sass' );
   });
   $.watch( src.js , function () {
-    gulp.start( 'webpack' );
+    gulp.start( 'js' );
   });
   $.watch( src.img , function () {
     gulp.start( 'imagemin' );

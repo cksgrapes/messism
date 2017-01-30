@@ -5,14 +5,14 @@ var path               = require('path');
 module.exports = {
 
     entry: {
-        common: './dev/js/common.js',
-        test: './dev/js/test.js'
+        common: './dev/src/Common/Common.js'
     },
 
     output: {
         publicPath: '/',
         path: __dirname + './release/assets/js/',
-        filename: '[name].js'
+        filename: '[name].js',
+        sourceMapFilename: 'maps/[file].map'
     },
 
     resolve: {
@@ -24,6 +24,8 @@ module.exports = {
     plugins: [
         new BowerWebpackPlugin(),
         new webpack.optimize.UglifyJsPlugin()
-    ]
+    ],
+
+    devtool: 'source-map'
 
 };

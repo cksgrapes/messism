@@ -76,32 +76,6 @@ node/gulp/bundleが事前にインストールされている必要がある。
 - 遷移先がサイト内コンテンツのリンクにはtarget属性を指定しない。
 - 遷移先が別ドメインのリンクにはtarget属性に `_blank` を指定する。
 
-### METAタグ
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>messism</title>
-    <meta name="description" content="">
-    <meta name="keywords" content="">
-    <meta property="og:locale" content="ja_JP">
-    <meta property="og:type" content="website">
-    <meta property="og:url" content="">
-    <meta property="og:image" content="ogp.png">
-    <meta property="og:site_name" content="">
-    <meta property="og:title" content="">
-    <meta property="og:description" content="">
-    <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:site" content=">
-    <meta name="twitter:title" content="">
-    <meta name="twitter:image" content="">
-    <meta name="twitter:url" content="">
-    <meta name="format-detection" content="telephone=no">
-    <link rel="shortcut icon" type="image/vnd.microsoft.icon" href="/assets/img/favicon.ico">
-    <link rel="icon" type="image/vnd.microsoft.icon" href="/assets/img/favicon.ico">
-    <link rel="apple-touch-icon" href="/assets/img/apple-touch-icon-precomposed.png">
-    <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Open+Sans">
-    <link rel="stylesheet" href="/assets/css/common.css">
-
 ### Webフォント
 
 | サービス名 | 使用フォント | 

@@ -1,0 +1,54 @@
+// Font
+// --------------------------------------------------
+
+$font-gothic : -apple-system, BlinkMacSystemFont, 'Helvetica Neue', 'Hiragino Kaku Gothic ProN', '游ゴシック Medium', meiryo, 'Open Sans', sans-serif;
+$font-mincho : "Hiragino Mincho ProN", "Hiragino Mincho Pro", "游明朝", YuMincho, "ＭＳ 明朝", serif;
+
+// Media query
+// --------------------------------------------------
+
+// breakpoint
+$sm-min : 480px;
+$md-min : 768px;
+$lg-min : 1024px;
+
+$xs-max : ($sm-min - 1);
+$sm-max : ($md-min - 1);
+$md-max : ($lg-min - 1);
+
+// - [ xs ] 〜479px ( スマートフォン縦 )
+// - [ sm ] 480px 〜 767px ( スマートフォン横・小さいタブレットの縦 )
+// - [ md ] 768px 〜 1023px（ タブレット・ノートPCなど ）
+// - [ lg ] 1024PX（ ワイドスクリーンのPC ）
+//   - 1024px以上は余白が広がる仕様で、最大コンテンツ幅は1024px(余白なしで980px)
+
+// media query Mixin
+@mixin mq($point, $direction: min) {
+  @if $point == smMin {
+    @media print, screen and (min-width: $sm-min) { @content; }
+  }
+  @else if $point == mdMin {
+    @media print, screen and (min-width: $md-min) { @content; }
+  }
+  @else if $point == lgMin {
+    @media print, screen and (min-width: $lg-min) { @content; }
+  }
+  @else if $point == xsMax {
+    @media screen and (max-width: $xs-max) { @content; }
+  }
+  @else if $point == smMax {
+    @media screen and (max-width: $sm-max) { @content; }
+  }
+  @else if $point == mdMax {
+    @media screen and (max-width: $md-max) { @content; }
+  }
+  // 変数で定義されていない値の場合
+  @else {
+    @if $direction == min {
+        @media print, screen and (min-width: $point)  { @content; }
+    }
+    @else if $direction == max {
+        @media screen and (max-width: $point) { @content; }
+    }
+  }
+}
